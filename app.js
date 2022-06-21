@@ -1,4 +1,5 @@
 //jshint esversion:6
+require("dotenv").config()
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
@@ -9,9 +10,9 @@ const encrypt = require("mongoose-encryption"); //mongoose encryption package
 const app = express();
 
 // middleware
+// app.use(express.json());
 app.use(express.static("public"));
 app.set("view engine", "ejs");
-app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // setting up mongoose
@@ -21,13 +22,12 @@ const userSchema = new mongoose.Schema({
   password: String,
 });
 // secret encryption key
-const secret = "wahala";
-userSchema.plugin(encrypt, { secret: secret, encryptedField: ["password"], }); //read more on mongoose encryption
+
+ userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedField: ["password"] }); //read more on mongoose encryption
 
 const User = mongoose.model("User", userSchema);
 
 ////////////Home Page////////////
-
 app.get("/", function (req, res) {
   res.render("home");
 });
@@ -79,6 +79,11 @@ app
 app.get("/submit", function (req, res) {
   res.render("submit");
 });
+
+
+User.findOne({email:`mikedbchi@yahoo.com`},(err,data)=>{
+    console.log(data)
+    })
 
 const port = process.env.PORT || 5000;
 
