@@ -5,7 +5,8 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 // const _ = require("lodash");
 const ejs = require("ejs");
-const encrypt = require("mongoose-encryption"); //mongoose encryption package
+// const encrypt = require("mongoose-encryption"); //mongoose encryption package
+const md5 = require("md5");
 
 const app = express();
 
@@ -23,7 +24,7 @@ const userSchema = new mongoose.Schema({
 });
 // secret encryption key
 
- userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedField: ["password"] }); //read more on mongoose encryption
+//  userSchema.plugin(encrypt, { secret: process.env.SECRET, encryptedField: ["password"] }); //read more on mongoose encryption
 
 const User = mongoose.model("User", userSchema);
 
@@ -41,7 +42,8 @@ app
   .post(function (req, res) {
     const newUser = new User({
       email: req.body.username,
-      password: req.body.password,
+      password:req.body.password
+    //   password: md5(req.body.password),
     });
     newUser.save((err) => {
       if (!err) {
@@ -59,12 +61,15 @@ app
     res.render("login");
   })
   .post(function (req, res) {
-    const username = req.body.username;
-    const password = req.body.password;
+    const email = req.body.username;
+    const password = md5(req.body.password);
+    // const password = req.body.password;
 
-    User.findOne({ email: username }, (err, foundUser) => {
+    console.log(email,password)
+    
+
+    User.findOne({ email }, (err, foundUser) => {
       if (err) {
-        console.log(err);
       } else {
         if (foundUser) {
           if (foundUser.password === password) {
@@ -81,9 +86,9 @@ app.get("/submit", function (req, res) {
 });
 
 
-User.findOne({email:`mikedbchi@yahoo.com`},(err,data)=>{
-    console.log(data)
-    })
+// User.findOne({email:`mikedbchi@yahoo.com`},(err,data)=>{
+//     console.log(data)
+//     })
 
 const port = process.env.PORT || 5000;
 
