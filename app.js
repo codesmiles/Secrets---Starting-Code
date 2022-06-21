@@ -4,7 +4,7 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 // const _ = require("lodash");
 const ejs = require("ejs");
-const { resolveMx } = require("dns");
+const encrypt = require("mongoose-encryption"); //mongoose encryption package
 
 const app = express();
 
@@ -17,12 +17,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // setting up mongoose
 mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
 const userSchema = new mongoose.Schema({
-    email: String,
-    password: String
-})
+  email: String,
+  password: String,
+});
+// secret encryption key
+const secret = "wahala";
+userSchema.plugin(encrypt, { secret: secret, encryptedField: ["password"], }); //read more on mongoose encryption
 
 const User = mongoose.model("User", userSchema);
-
 
 ////////////Home Page////////////
 
@@ -38,15 +40,15 @@ app
   })
   .post(function (req, res) {
     const newUser = new User({
-        email: req.body.username,
-        password: req.body.password
-    })
-    newUser.save(err => {
-        if(!err){
-            res.render("secret");
-        }else{
-            console.log(err)
-        }
+      email: req.body.username,
+      password: req.body.password,
+    });
+    newUser.save((err) => {
+      if (!err) {
+        res.render("secrets");
+      } else {
+        console.log(err);
+      }
     });
   });
 
@@ -60,16 +62,18 @@ app
     const username = req.body.username;
     const password = req.body.password;
 
-    User.findOne({ email: username }, (err, user) => {
-        if(err){
-            console.log(err)
-        }else{
-            
+    User.findOne({ email: username }, (err, foundUser) => {
+      if (err) {
+        console.log(err);
+      } else {
+        if (foundUser) {
+          if (foundUser.password === password) {
+            res.render("secrets");
+          }
         }
-
-    })
+      }
+    });
   });
-
 
 //////////SUBMIT page////////////
 app.get("/submit", function (req, res) {
