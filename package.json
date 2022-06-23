@@ -2,10 +2,11 @@
   "name": "secrets---starting-code",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "passportAuth.js", 
   "scripts": {
-    "start": "node app.js",
-    "dev": "nodemon app.js",
+    "startApp": "node app.js",
+    "devApp": "nodemon app.js",
+    "devPass": "nodemon passportAuth.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
