@@ -44,15 +44,17 @@ userSchema.plugin(passportLocalMongoose); // passport local mongoose
 
 const User = mongoose.model("User", userSchema);
 
+////////////////PASSPORT////////////////////
 passport.use(User.createStrategy());
 
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
-
+///////////////////////////////////////////////
 
 /////////////////bcrypt//////////////////
 // //const saltRounds = 10;
 // const salt = bcrypt.genSalt(saltRounds)
+///////////////////////////////////
 
 ////////////Home Page////////////
 app.get("/", function (req, res) {
