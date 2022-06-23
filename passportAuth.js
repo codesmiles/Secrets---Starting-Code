@@ -8,7 +8,7 @@ const session = require("express-session"); //level 4
 const passport = require("passport"); //level 4
 const passportLocalMongoose = require("passport-local-mongoose"); //level 4
 
-
+// looking into passportjs.org is keen
 const app = express();
 
 // middleware
@@ -19,14 +19,14 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 ///////////////////////EXPRESS SESSION in middleware///////////////////////
 app.use(
-    session({
-      secret: "Its a secret.",
-      resave: false,
-      saveUninitialized: false,
-    })
-  );
+  session({
+    secret: "Its a secret.",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
 
-  app.use(passport.initialize());
+app.use(passport.initialize());
 app.use(passport.session());
 
 // setting up mongoose
@@ -50,46 +50,74 @@ passport.deserializeUser(User.deserializeUser());
 
 ////////////Home Page////////////
 app.get("/", function (req, res) {
-    res.render("home");
-  });
-  
-  ///////////////SECRETS PAGE///////////////
-  app.get(`/secrets`, (req, res) => {
-    if (req.isAuthenticated()) {
-      res.render("secrets");
-    } else {
-      res.redirect("/login");
+  res.render("home");
+});
+
+///////////////SECRETS PAGE///////////////
+app.get(`/secrets`, (req, res) => {
+  if (req.isAuthenticated()) {
+    res.render("secrets");
+  } else {
+    res.redirect("/login");
+  }
+});
+
+app.get("/logout", (req, res) => {
+  req.logout((err)=>{
+    if(err){
+        console.log(err)
     }
   });
-  
-  ///////////register page////////////
-  app
-    .route("/register")
-    .get(function (req, res) {
-      res.render("register");
-    })
-    .post(function (req, res) {
-      ////////////////PASSPORT LOCAL MONGOOSE/////////
-      User.register(
-        { username: req.body.username },
-        req.body.password,
-        (err, user) => {
-          if (err) {
-            console.log(err);
-            res.redirect("/register");
-          } else {
-            passport.authenticate("local")(req, res, () => {
-              res.redirect("/secrets");
-            });
-          }
+  res.redirect("/");
+});
+///////////register page////////////
+app
+  .route("/register")
+  .get(function (req, res) {
+    res.render("register");
+  })
+  .post(function (req, res) {
+    ////////////////PASSPORT LOCAL MONGOOSE/////////
+    User.register(
+      { username: req.body.username },
+      req.body.password,
+      (err, user) => {
+        if (err) {
+          console.log(err);
+          res.redirect("/register");
+        } else {
+          passport.authenticate("local")(req, res, () => {
+            res.redirect("/secrets");
+          });
         }
-      );
-    })
-    
+      }
+    );
+  });
 
-    const port = process.env.PORT || 4000;
 
-    app.listen(port, () => {
-      console.log(`Server started on port ${port}`);
-    });
-    
+app.route("/login")
+.get((req,res)=>{
+    res.render("login");
+})
+.post((req, res) => {
+  const user = new User({
+    username: req.body.username,
+    password: req.body.password,
+  });
+  /////////PASSPORT////////////
+  req.login(user, (err) => {
+    if (err) {
+      console.log(err);
+    } else {
+      passport.authenticate("local")(req, res, () => {
+        res.redirect("/secrets");
+      });
+    }
+  });
+});
+const port = process.env.PORT || 4000;
+
+app.listen(port, () => {
+  console.log(`Server started on port ${port}`);
+});
+
