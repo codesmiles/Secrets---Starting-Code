@@ -7,8 +7,10 @@ const ejs = require("ejs");
 const session = require("express-session"); //level 4
 const passport = require("passport"); //level 4
 const passportLocalMongoose = require("passport-local-mongoose"); //level 4
-
+const GoogleStrategy = require("passport-google-oauth20").Strategy; //level 6
+const findOrCreate = require("mongoose-findorcreate");
 // looking into passportjs.org is keen
+
 const app = express();
 
 // middleware
@@ -38,20 +40,58 @@ const userSchema = new mongoose.Schema({
 });
 
 userSchema.plugin(passportLocalMongoose); // passport local mongoose
-
+userSchema.plugin(findOrCreate);
 const User = mongoose.model("User", userSchema);
 
 ////////////////PASSPORT////////////////////
 passport.use(User.createStrategy());
 
-passport.serializeUser(User.serializeUser());
-passport.deserializeUser(User.deserializeUser());
+// passport.serializeUser(User.serializeUser());
+// passport.deserializeUser(User.deserializeUser());
+passport.serializeUser((user,done)=>{
+  done(null,user.id);
+});
+
+passport.deserializeUser((id,done)=>{
+  User.findById(id,function(id,user){
+done(err,user);
+  })
+})
 ///////////////////////////////////////////////
+
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.CLIENT_ID,
+      clientSecret: process.env.CLIENT_SECRET,
+      callbackURL: "/auth/google/secrets",
+      userProfileURL:"https://www.googlepis.com/oauth2/c3/userinfo"
+    },
+    (accessToken, refreshToken, profile, cb) =>{
+      console.log/(profile);
+      console.log(accessToken);
+      console.log(refreshToken);
+      User.findOrCreate({ googleId: profile.id }, function (err, user) {
+        return cb(err, user);
+      });
+    }
+  )
+);
 
 ////////////Home Page////////////
 app.get("/", function (req, res) {
   res.render("home");
 });
+
+app.get('/auth/google',
+  passport.authenticate('google', { scope: ['profile'] }));
+
+app.get('/auth/google/secrets', 
+  passport.authenticate('google', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication, redirect to secrets.
+    res.redirect('/secrets');
+  });
 
 ///////////////SECRETS PAGE///////////////
 app.get(`/secrets`, (req, res) => {
@@ -63,9 +103,9 @@ app.get(`/secrets`, (req, res) => {
 });
 
 app.get("/logout", (req, res) => {
-  req.logout((err)=>{
-    if(err){
-        console.log(err)
+  req.logout((err) => {
+    if (err) {
+      console.log(err);
     }
   });
   res.redirect("/");
@@ -94,30 +134,29 @@ app
     );
   });
 
-
-app.route("/login")
-.get((req,res)=>{
+app
+  .route("/login")
+  .get((req, res) => {
     res.render("login");
-})
-.post((req, res) => {
-  const user = new User({
-    username: req.body.username,
-    password: req.body.password,
+  })
+  .post((req, res) => {
+    const user = new User({
+      username: req.body.username,
+      password: req.body.password,
+    });
+    /////////PASSPORT////////////
+    req.login(user, (err) => {
+      if (err) {
+        console.log(err);
+      } else {
+        passport.authenticate("local")(req, res, () => {
+          res.redirect("/secrets");
+        });
+      }
+    });
   });
-  /////////PASSPORT////////////
-  req.login(user, (err) => {
-    if (err) {
-      console.log(err);
-    } else {
-      passport.authenticate("local")(req, res, () => {
-        res.redirect("/secrets");
-      });
-    }
-  });
-});
 const port = process.env.PORT || 4000;
 
 app.listen(port, () => {
   console.log(`Server started on port ${port}`);
 });
-
