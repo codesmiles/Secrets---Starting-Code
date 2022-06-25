@@ -37,6 +37,7 @@ mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
 const userSchema = new mongoose.Schema({
   email: String,
   password: String,
+  googleId:String
 });
 
 userSchema.plugin(passportLocalMongoose); // passport local mongoose
@@ -68,7 +69,7 @@ passport.use(
       callbackURL: "http://localhost:4000/auth/google/secrets",
     },
     (accessToken, refreshToken, profile, cb) => {
-      // console.log(profile);
+      console.log(profile);
       // console.log(accessToken);
       // console.log(refreshToken);
       User.findOrCreate({ googleId: profile.id }, function (err, user) {
