@@ -9,6 +9,8 @@ const passport = require("passport"); //level 4
 const passportLocalMongoose = require("passport-local-mongoose"); //level 4
 const GoogleStrategy = require("passport-google-oauth20").Strategy; //level 6
 const findOrCreate = require("mongoose-findorcreate");
+const passportFacebook = require("passport-facebook"); //require facebook
+
 // looking into passportjs.org is keen
 
 const app = express();
@@ -64,8 +66,8 @@ passport.deserializeUser((id, done) => {
 passport.use(
   new GoogleStrategy(
     {
-      clientID: process.env.CLIENT_ID,
-      clientSecret: process.env.CLIENT_SECRET,
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: "http://localhost:4000/auth/google/secrets",
     },
     (accessToken, refreshToken, profile, cb) => {
