@@ -115,6 +115,7 @@ app.get("/logout", (req, res) => {
   });
   res.redirect("/");
 });
+
 ///////////register page////////////
 app
   .route("/register")
@@ -139,6 +140,7 @@ app
     );
   });
 
+ //////////LOGIN////////////////
 app
   .route("/login")
   .get((req, res) => {
