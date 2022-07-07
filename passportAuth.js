@@ -39,7 +39,8 @@ mongoose.connect("mongodb://localhost:27017/userDB", { useNewUrlParser: true });
 const userSchema = new mongoose.Schema({
   email: String,
   password: String,
-  googleId:String
+  googleId: String,
+  secret:String
 });
 
 userSchema.plugin(passportLocalMongoose); // passport local mongoose
@@ -100,39 +101,80 @@ app.get(
   }
 );
 
-
 // FACEBOOK OAUTH
-passport.use(new FacebookStrategy({
-  clientID: process.env.FACEBOOK_APP_ID,
-  clientSecret: process.env.FACEBOOK_APP_SECRET,
-  callbackURL: "http://localhost:4000/auth/facebook/secrets"
-},
-function(accessToken, refreshToken, profile, cb) {
-  User.findOrCreate({ facebookId: profile.id }, function (err, user) {
-    
-    return cb(err, user);
-  });
-}
-));
+passport.use(
+  new FacebookStrategy(
+    {
+      clientID: process.env.FACEBOOK_APP_ID,
+      clientSecret: process.env.FACEBOOK_APP_SECRET,
+      callbackURL: "http://localhost:4000/auth/facebook/secrets",
+    },
+    function (accessToken, refreshToken, profile, cb) {
+      User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+        return cb(err, user);
+      });
+    }
+  )
+);
 
-app.get('/auth/facebook',
-  passport.authenticate('facebook'));
+app.get("/auth/facebook", passport.authenticate("facebook"));
 
-app.get('/auth/facebook/secrets',
-  passport.authenticate('facebook', { failureRedirect: '/login' }),
-  function(req, res) {
+app.get(
+  "/auth/facebook/secrets",
+  passport.authenticate("facebook", { failureRedirect: "/login" }),
+  function (req, res) {
     // Successful authentication, redirect home.
-    res.redirect('/secrets');
-  }); 
+    res.redirect("/secrets");
+  }
+);
 
 ///////////////SECRETS PAGE///////////////
 app.get(`/secrets`, (req, res) => {
-  if (req.isAuthenticated()) {
-    res.render("secrets");
-  } else {
-    res.redirect("/login");
-  }
+  // if (req.isAuthenticated()) {
+  //   res.render("secrets");
+  // } else {
+  //   res.redirect("/login");
+  // }
+
+  // ______ RENDER ALL SECRETS______
+    User.find({ secret: { $ne: null } }, function (err, foundUsers) {
+      if (err) {
+        console.log(err);
+      } else {
+        if (foundUsers) {
+          res.render("secrets", { usersWithSecrets: foundUsers });
+        } 
+      }
+    }); 
 });
+
+app
+  .route(`/submit`)
+  .get((req, res) => {
+    if (req.isAuthenticated()) {
+      res.render("submit");
+    } else {
+      res.redirect("/login");
+    }
+  })
+  .post((req, res) => {
+    const submittedSecret = req.body.secret;
+    // console.log(req.user);
+    User.findById(req.user.id, (err, foundUser) => {
+      if(err){
+        console.log(err);
+      }else{
+        if(foundUser){
+          foundUser.secret = submittedSecret;
+          foundUser.save(()=>{
+            res.redirect("/secrets");
+          })
+        }
+      }
+    })
+
+
+  });
 
 app.get("/logout", (req, res) => {
   req.logout((err) => {
@@ -167,7 +209,7 @@ app
     );
   });
 
- //////////LOGIN////////////////
+//////////LOGIN////////////////
 app
   .route("/login")
   .get((req, res) => {
@@ -189,6 +231,7 @@ app
       }
     });
   });
+
 const port = process.env.PORT || 4000;
 
 app.listen(port, () => {
