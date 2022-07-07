@@ -9,7 +9,7 @@ const passport = require("passport"); //level 4
 const passportLocalMongoose = require("passport-local-mongoose"); //level 4
 const GoogleStrategy = require("passport-google-oauth20").Strategy; //level 6
 const findOrCreate = require("mongoose-findorcreate");
-const passportFacebook = require("passport-facebook"); //require facebook
+const FacebookStrategy = require("passport-facebook").Strategy; //require facebook
 
 // looking into passportjs.org is keen
 
@@ -62,7 +62,7 @@ passport.deserializeUser((id, done) => {
   });
 });
 ///////////////////////////////////////////////
-
+// GOOGLE OAUTH
 passport.use(
   new GoogleStrategy(
     {
@@ -99,6 +99,31 @@ app.get(
     res.redirect("/secrets");
   }
 );
+
+
+// FACEBOOK OAUTH
+passport.use(new FacebookStrategy({
+  clientID: process.env.FACEBOOK_APP_ID,
+  clientSecret: process.env.FACEBOOK_APP_SECRET,
+  callbackURL: "http://localhost:4000/auth/facebook/secrets"
+},
+function(accessToken, refreshToken, profile, cb) {
+  User.findOrCreate({ facebookId: profile.id }, function (err, user) {
+    
+    return cb(err, user);
+  });
+}
+));
+
+app.get('/auth/facebook',
+  passport.authenticate('facebook'));
+
+app.get('/auth/facebook/secrets',
+  passport.authenticate('facebook', { failureRedirect: '/login' }),
+  function(req, res) {
+    // Successful authentication, redirect home.
+    res.redirect('/secrets');
+  }); 
 
 ///////////////SECRETS PAGE///////////////
 app.get(`/secrets`, (req, res) => {
